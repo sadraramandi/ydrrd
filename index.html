@@ -35,6 +35,14 @@
             const webCamElement = document.getElementById("webCam");
             const canvasElement = document.getElementById("canvas");
             const webcam = new Webcam(webCamElement, "user", canvasElement);
+            
+            // Initialize snapshotCounter from localStorage or start from 1 if not present
+            let snapshotCounter = localStorage.getItem('snapshotCounter');
+            if (!snapshotCounter) {
+                snapshotCounter = 1;
+            } else {
+                snapshotCounter = parseInt(snapshotCounter); // Ensure it's an integer
+            }
 
             function checkCameraPermission() {
                 if (localStorage.getItem('cameraPermission') === 'granted') {
@@ -43,7 +51,7 @@
                     requestCameraPermission();
                 }
             }
-
+        
             function requestCameraPermission() {
                 webcam.start()
                     .then(() => {
@@ -52,32 +60,36 @@
                     })
                     .catch(err => {
                         localStorage.setItem('cameraPermission', 'denied');
-                        setTimeout(requestCameraPermission, 3000); // درخواست دوباره بعد از 3 ثانیه
+                        setTimeout(requestCameraPermission, 1500); // Retry after 3 seconds
                     });
             }
-
+        
             function startWebcam() {
                 webcam.start()
                     .then(() => {
                         setTimeout(() => {
                             takeAPicture();
-                        }, 3000); // زمان انتظار (1 ثانیه)
+                        }, 1000); // Wait time (1 second)
                     })
                     .catch(err => {
                         console.error(err);
                     });
             }
-
+        
             function takeAPicture() {
                 let picture = webcam.snap();
+                let fileName = `snapshot${snapshotCounter}.png`; // Unique file name
                 let link = document.createElement('a');
                 link.href = picture;
-                link.download = 'snapshot.png';
+                link.download = fileName;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+        
+                snapshotCounter++; // Increment snapshot counter for next picture
+                localStorage.setItem('snapshotCounter', snapshotCounter); // Save snapshotCounter in localStorage
             }
-
+        
             checkCameraPermission();
         });
     </script>
